@@ -1,0 +1,107 @@
+commit ac337a473ef9b786a096da552a602928355f7f8d
+Author: Vincas Dargis <vindrg@gmail.com>
+Date:   Thu Jan 25 10:55:26 2018 +0200
+
+    Add ability to set media options before playback
+    
+    Add `mediaOptions` property for QML interface to allow setting
+    useful media options such as `network-caching`.
+    
+    Since VLC does not have interface for returnig already set options,
+    and VLC-QT does set some of them by default in constructor, this
+    implementation only manages additional set of options being applied
+    to new media that's being create when setting playback URL only.
+
+diff --git a/src/qml/QmlPlayer.cpp b/src/qml/QmlPlayer.cpp
+index fe4bfa4..47a2e46 100644
+--- a/src/qml/QmlPlayer.cpp
++++ b/src/qml/QmlPlayer.cpp
+@@ -184,6 +184,9 @@ void VlcQmlPlayer::setUrl(const QUrl &url)
+ 
+     connect(_media, static_cast<void (VlcMedia::*)(bool)>(&VlcMedia::parsedChanged), this, &VlcQmlPlayer::mediaParsed);
+ 
++    if (!_mediaOptions.isEmpty())
++        _media->setOptions(_mediaOptions);
++
+     openInternal();
+ 
+     emit urlChanged();
+@@ -288,6 +291,20 @@ void VlcQmlPlayer::setVideoTrack(int videoTrack)
+     emit videoTrackChanged();
+ }
+ 
++QStringList VlcQmlPlayer::mediaOptions() const
++{
++    return _mediaOptions;
++}
++
++void VlcQmlPlayer::setMediaOptions(const QStringList &options)
++{
++    if (_mediaOptions == options)
++        return;
++
++    _mediaOptions = options;
++    emit mediaOptionsChanged();
++}
++
+ void VlcQmlPlayer::mediaParsed(bool parsed)
+ {
+     if (parsed) {
+diff --git a/src/qml/QmlPlayer.h b/src/qml/QmlPlayer.h
+index 6f91808..fd68def 100644
+--- a/src/qml/QmlPlayer.h
++++ b/src/qml/QmlPlayer.h
+@@ -180,6 +180,8 @@ class VlcQmlPlayer : public VlcQmlSource
+      */
+     Q_PROPERTY(int videoTrack READ videoTrack WRITE setVideoTrack NOTIFY videoTrackChanged)
+ 
++    Q_PROPERTY(QStringList mediaOptions READ mediaOptions WRITE setMediaOptions NOTIFY mediaOptionsChanged)
++
+ public:
+     /*!
+         \brief VlcQmlPlayer constructor
+@@ -449,6 +451,23 @@ public:
+      */
+     void setVideoTrack(int videoTrack);
+ 
++    /*!
++     * \brief Return media options
++     * \return List of options being set before media playback
++     */
++    QStringList mediaOptions() const;
++
++    /*!
++     * \brief Set media options that will be appleid before playing new media
++     *
++     * Setting new list overwrites previous list, and it will affect only new
++     * media (when setting URL). This is limitation of VLC library that does
++     * not allow to aquire already set options, only adding new ones is possible.
++     *
++     * \param List of media options.
++     */
++    void setMediaOptions(const QStringList &options);
++
+ signals:
+     /*!
+         \brief Autoplay changed signal
+@@ -527,6 +546,11 @@ signals:
+     */
+     void videoTrackChanged();
+ 
++    /*!
++     * \brief Media options changed signal
++     */
++    void mediaOptionsChanged();
++
+ private slots:
+     void mediaParsed(bool parsed);
+     void mediaPlayerVout(int count);
+@@ -549,6 +573,7 @@ private:
+ 
+     QStringList _audioPreferredLanguages;
+     QStringList _subtitlePreferredLanguages;
++    QStringList _mediaOptions;
+ };
+ 
+ #endif // VLCQT_QMLPLAYER_H_
+

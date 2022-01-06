@@ -1,0 +1,28 @@
+From 2f7369d66138f002ba129d90017d8da7056ba69f Mon Sep 17 00:00:00 2001
+From: Vincas Dargis <vindrg@gmail.com>
+Date: Fri, 23 Mar 2018 16:07:50 +0200
+Subject: [PATCH] Set media options on play()
+
+Previously, media options where set only on url change. This worked
+for autoplay use case, but failed to update media options when url was
+not changed and palyback was restarted with stop() and start().
+
+This patch fixed it by setting media options in play() method.
+---
+ src/qml/QmlPlayer.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/qml/QmlPlayer.cpp b/src/qml/QmlPlayer.cpp
+index 47a2e46..46e0cc9 100644
+--- a/src/qml/QmlPlayer.cpp
++++ b/src/qml/QmlPlayer.cpp
+@@ -72,6 +72,9 @@ void VlcQmlPlayer::pause()
+ 
+ void VlcQmlPlayer::play()
+ {
++    if (_media && !_mediaOptions.isEmpty())
++        _media->setOptions(_mediaOptions);
++
+     _player->play();
+ }
+ 
